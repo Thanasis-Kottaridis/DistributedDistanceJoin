@@ -13,19 +13,23 @@ import geog
 """
 
 
-def createAXNFigure() :
+def createAXNFigure(coastline_path="../testData/EuropeanCoastline/Europe Coastline (Polygone).shp",
+                    zoom_in=False,
+                    zoom_bounds=[-7, -4, 47, 49.5]) :
     """
     creates a map ploting european coastline
     :return: the ax
     """
     # geopandas basic world map with out details
     # world = gpd.read_file(gpd.datasets.get_path('naturalearth_lowres'))
-    world = gpd.read_file("../testData/EuropeanCoastline/Europe Coastline (Polygone).shp")
+    world = gpd.read_file(coastline_path)
     world.to_crs(epsg=4326, inplace=True)  # convert axes tou real world coordinates
 
     ax = world.plot(figsize=(10, 6))
-    plt.axis([-9, 1, 45, 51])  # set plot bounds
-    # plt.axis([-7, -4, 47, 49.5])  # set zoom plot bounds
+    if not zoom_in:
+        plt.axis([-9, 1, 45, 51])  # set plot bounds
+    else:
+        plt.axis(zoom_bounds)  # set zoom plot bounds
     return ax
 
 

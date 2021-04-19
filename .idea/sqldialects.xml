@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="SqlDialectMappings">
-    <file url="notebook:///Users/thanoskottaridis/Documents/metaptixiako_files/main lectures/b_eksamino/Big-data-practices-and-tools/final_project/DistributedDistanceJoin/sparkApplications/testNotebook.ipynb" dialect="GenericSQL" />
+    <file url="notebook:///Users/thanoskottaridis/Documents/metaptixiako_files/main lectures/b_eksamino/Big-data-practices-and-tools/final_project/DistributedDistanceJoin/sparkApplications/notebooks/testNotebook.ipynb" dialect="GenericSQL" />
   </component>
 </project>

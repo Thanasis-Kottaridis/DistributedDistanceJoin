@@ -1,9 +1,13 @@
 from pip._vendor.distlib.compat import raw_input
 from utils import mongoConnector as connector
+import pandas as pd
 import csv
 import json
 import time
 
+# Constants
+one_month_Uinix = 2682000
+one_hour_in_Unix = 3600
 
 def findPolyFromSeas(seaName="Celtic Sea") :
     start_time = time.time()
@@ -107,5 +111,17 @@ def csvToTxt():
         my_output_file.close()
 
 
+def getOneMonthData(fromTime=1448988894) :
+    results = fetchPointsInTimeInterval(timeFrom=fromTime, timeTo=fromTime + 2682000)
+    points_df = pd.DataFrame(results)
+    points_df.to_csv('ais_one_month.csv')
+
+
+def getOneHourData(fromTime=1448988894) :
+    results = fetchPointsInTimeInterval(timeFrom=fromTime, timeTo=fromTime + 24*one_hour_in_Unix)
+    points_df = pd.DataFrame(results)
+    points_df.to_csv('ais_one_hour2.csv')
+
+
 if __name__ == '__main__':
-    csvToTxt()
+    getOneHourData(1448988894 + (24*one_hour_in_Unix))
