@@ -1,0 +1,185 @@
+
+------------------------------ CLUSTER EXPLAIN ONE HOUR DATA -------------------------------------
+
+== Physical Plan ==
+*(2) Project [a_id#1504, b_id#1712]
++- *(2) BroadcastHashJoin [a_grid_id#1507L], [b_grid_id#1713L], Inner, BuildRight, false
+   :- *(2) Filter isnotnull(a_grid_id#1507L)
+   :  +- InMemoryTableScan [a_id#1504, a_grid_id#1507L], [isnotnull(a_grid_id#1507L)]
+   :        +- InMemoryRelation [a_id#1504, a_X#1505, a_Y#1506, a_grid_id#1507L], StorageLevel(disk, memory, deserialized, 1 replicas)
+   :              +- *(1) Project [_id#38 AS a_id#1504, X#39 AS a_X#1505, Y#40 AS a_Y#1506, grid_id#146L AS a_grid_id#1507L]
+   :                 +- InMemoryTableScan [X#39, Y#40, _id#38, grid_id#146L]
+   :                       +- InMemoryRelation [_id#38, X#39, Y#40, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, grid_id#146L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150], StorageLevel(disk, memory, deserialized, 1 replicas)
+   :                             +- BroadcastNestedLoopJoin BuildRight, Inner, ((((X#39 >= grid_minX#149) AND (X#39 <= grid_maxX#147)) AND (Y#40 >= grid_minY#150)) AND (Y#40 <= grid_maxY#148))
+   :                                :- *(1) Filter (isnotnull(X#39) AND isnotnull(Y#40))
+   :                                :  +- FileScan csv [_id#38,X#39,Y#40] Batched: false, DataFilters: [isnotnull(X#39), isnotnull(Y#40)], Format: CSV, Location: InMemoryFileIndex[file:/home/user/DistributedDistanceJoin/testData/ais_one_hour2.csv], PartitionFilters: [], PushedFilters: [IsNotNull(X), IsNotNull(Y)], ReadSchema: struct<_id:string,X:double,Y:double>
+   :                                +- BroadcastExchange IdentityBroadcastMode, [id=#164]
+   :                                   +- *(2) Filter (((isnotnull(grid_minX#149) AND isnotnull(grid_maxX#147)) AND isnotnull(grid_minY#150)) AND isnotnull(grid_maxY#148))
+   :                                      +- *(2) Scan ExistingRDD[exp_grid_maxX#142,exp_grid_maxY#143,exp_grid_minX#144,exp_grid_minY#145,grid_id#146L,grid_maxX#147,grid_maxY#148,grid_minX#149,grid_minY#150]
+   +- BroadcastExchange HashedRelationBroadcastMode(List(input[1, bigint, true]),false), [id=#282]
+      +- *(1) Project [_id#16 AS b_id#1712, grid_id#543L AS b_grid_id#1713L]
+         +- *(1) Filter ((isnotnull(grid_id#543L) AND isnotnull(exp_grid_id#529L)) AND (grid_id#543L = exp_grid_id#529L))
+            +- InMemoryTableScan [_id#16, exp_grid_id#529L, grid_id#543L], [isnotnull(grid_id#543L), isnotnull(exp_grid_id#529L), (grid_id#543L = exp_grid_id#529L)]
+                  +- InMemoryRelation [_id#16, X#17, Y#18, exp_grid_id#529L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, count#257L, grid_id#543L], StorageLevel(disk, memory, deserialized, 1 replicas)
+                        +- Exchange hashpartitioning(exp_grid_id#529L, 2), REPARTITION_WITH_NUM, [id=#243]
+                           +- InMemoryTableScan [_id#16, X#17, Y#18, exp_grid_id#529L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, count#257L, grid_id#543L]
+                                 +- InMemoryRelation [_id#16, X#17, Y#18, exp_grid_id#529L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, count#257L, grid_id#543L], StorageLevel(disk, memory, deserialized, 1 replicas)
+                                       +- *(3) Project [_id#16, X#17, Y#18, grid_id#146L AS exp_grid_id#529L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, count#257L, CASE WHEN ((((X#17 >= grid_minX#149) AND (X#17 <= grid_maxX#147)) AND (Y#18 >= grid_minY#150)) AND (Y#18 <= grid_maxY#148)) THEN grid_id#146L ELSE null END AS grid_id#543L]
+                                          +- BroadcastNestedLoopJoin BuildRight, Inner, ((((X#17 >= exp_grid_minX#144) AND (X#17 <= exp_grid_maxX#142)) AND (Y#18 >= exp_grid_minY#145)) AND (Y#18 <= exp_grid_maxY#143))
+                                             :- *(1) Filter (isnotnull(X#17) AND isnotnull(Y#18))
+                                             :  +- FileScan csv [_id#16,X#17,Y#18] Batched: false, DataFilters: [isnotnull(X#17), isnotnull(Y#18)], Format: CSV, Location: InMemoryFileIndex[file:/home/user/DistributedDistanceJoin/testData/ais_one_hour.csv], PartitionFilters: [], PushedFilters: [IsNotNull(X), IsNotNull(Y)], ReadSchema: struct<_id:string,X:double,Y:double>
+                                             +- BroadcastExchange IdentityBroadcastMode, [id=#229]
+                                                +- *(2) Filter (((isnotnull(exp_grid_minX#144) AND isnotnull(exp_grid_maxX#142)) AND isnotnull(exp_grid_minY#145)) AND isnotnull(exp_grid_maxY#143))
+                                                   +- *(2) ColumnarToRow
+                                                      +- InMemoryTableScan [grid_id#146L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, count#257L], [isnotnull(exp_grid_minX#144), isnotnull(exp_grid_maxX#142), isnotnull(exp_grid_minY#145), isnotnull(exp_grid_maxY#143)]
+                                                            +- InMemoryRelation [grid_id#146L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, count#257L], StorageLevel(disk, memory, deserialized, 1 replicas)
+                                                                  +- *(2) Filter (count#257L > 0)
+                                                                     +- *(2) HashAggregate(keys=[grid_id#146L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145], functions=[count(1)])
+                                                                        +- Exchange hashpartitioning(grid_id#146L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, 200), ENSURE_REQUIREMENTS, [id=#186]
+                                                                           +- *(1) HashAggregate(keys=[grid_id#146L, knownfloatingpointnormalized(normalizenanandzero(grid_maxX#147)) AS grid_maxX#147, knownfloatingpointnormalized(normalizenanandzero(grid_maxY#148)) AS grid_maxY#148, knownfloatingpointnormalized(normalizenanandzero(grid_minX#149)) AS grid_minX#149, knownfloatingpointnormalized(normalizenanandzero(grid_minY#150)) AS grid_minY#150, knownfloatingpointnormalized(normalizenanandzero(exp_grid_maxX#142)) AS exp_grid_maxX#142, knownfloatingpointnormalized(normalizenanandzero(exp_grid_maxY#143)) AS exp_grid_maxY#143, knownfloatingpointnormalized(normalizenanandzero(exp_grid_minX#144)) AS exp_grid_minX#144, knownfloatingpointnormalized(normalizenanandzero(exp_grid_minY#145)) AS exp_grid_minY#145], functions=[partial_count(1)])
+                                                                              +- InMemoryTableScan [exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, grid_id#146L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150]
+                                                                                    +- InMemoryRelation [_id#38, X#39, Y#40, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, grid_id#146L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150], StorageLevel(disk, memory, deserialized, 1 replicas)
+                                                                                          +- BroadcastNestedLoopJoin BuildRight, Inner, ((((X#39 >= grid_minX#149) AND (X#39 <= grid_maxX#147)) AND (Y#40 >= grid_minY#150)) AND (Y#40 <= grid_maxY#148))
+                                                                                             :- *(1) Filter (isnotnull(X#39) AND isnotnull(Y#40))
+                                                                                             :  +- FileScan csv [_id#38,X#39,Y#40] Batched: false, DataFilters: [isnotnull(X#39), isnotnull(Y#40)], Format: CSV, Location: InMemoryFileIndex[file:/home/user/DistributedDistanceJoin/testData/ais_one_hour2.csv], PartitionFilters: [], PushedFilters: [IsNotNull(X), IsNotNull(Y)], ReadSchema: struct<_id:string,X:double,Y:double>
+                                                                                             +- BroadcastExchange IdentityBroadcastMode, [id=#164]
+                                                                                                +- *(2) Filter (((isnotnull(grid_minX#149) AND isnotnull(grid_maxX#147)) AND isnotnull(grid_minY#150)) AND isnotnull(grid_maxY#148))
+                                                                                                   +- *(2) Scan ExistingRDD[exp_grid_maxX#142,exp_grid_maxY#143,exp_grid_minX#144,exp_grid_minY#145,grid_id#146L,grid_maxX#147,grid_maxY#148,grid_minX#149,grid_minY#150]
+
+
+== Physical Plan ==
+*(2) BroadcastHashJoin [a_grid_id#1507L], [b_exp_grid_id#1733L], Inner, BuildRight, (SQRT((POWER((a_X#1505 - b_X#1731), 2.0) + POWER((a_Y#1506 - b_Y#1732), 2.0))) <= 0.09009009009009009), false
+:- *(2) Filter ((isnotnull(a_X#1505) AND isnotnull(a_Y#1506)) AND isnotnull(a_grid_id#1507L))
+:  +- InMemoryTableScan [a_id#1504, a_X#1505, a_Y#1506, a_grid_id#1507L], [isnotnull(a_X#1505), isnotnull(a_Y#1506), isnotnull(a_grid_id#1507L)]
+:        +- InMemoryRelation [a_id#1504, a_X#1505, a_Y#1506, a_grid_id#1507L], StorageLevel(disk, memory, deserialized, 1 replicas)
+:              +- *(1) Project [_id#38 AS a_id#1504, X#39 AS a_X#1505, Y#40 AS a_Y#1506, grid_id#146L AS a_grid_id#1507L]
+:                 +- InMemoryTableScan [X#39, Y#40, _id#38, grid_id#146L]
+:                       +- InMemoryRelation [_id#38, X#39, Y#40, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, grid_id#146L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150], StorageLevel(disk, memory, deserialized, 1 replicas)
+:                             +- BroadcastNestedLoopJoin BuildRight, Inner, ((((X#39 >= grid_minX#149) AND (X#39 <= grid_maxX#147)) AND (Y#40 >= grid_minY#150)) AND (Y#40 <= grid_maxY#148))
+:                                :- *(1) Filter (isnotnull(X#39) AND isnotnull(Y#40))
+:                                :  +- FileScan csv [_id#38,X#39,Y#40] Batched: false, DataFilters: [isnotnull(X#39), isnotnull(Y#40)], Format: CSV, Location: InMemoryFileIndex[file:/home/user/DistributedDistanceJoin/testData/ais_one_hour2.csv], PartitionFilters: [], PushedFilters: [IsNotNull(X), IsNotNull(Y)], ReadSchema: struct<_id:string,X:double,Y:double>
+:                                +- BroadcastExchange IdentityBroadcastMode, [id=#164]
+:                                   +- *(2) Filter (((isnotnull(grid_minX#149) AND isnotnull(grid_maxX#147)) AND isnotnull(grid_minY#150)) AND isnotnull(grid_maxY#148))
+:                                      +- *(2) Scan ExistingRDD[exp_grid_maxX#142,exp_grid_maxY#143,exp_grid_minX#144,exp_grid_minY#145,grid_id#146L,grid_maxX#147,grid_maxY#148,grid_minX#149,grid_minY#150]
++- BroadcastExchange HashedRelationBroadcastMode(List(input[3, bigint, true]),false), [id=#312]
+   +- *(1) Project [_id#16 AS b_id#1730, X#17 AS b_X#1731, Y#18 AS b_Y#1732, exp_grid_id#529L AS b_exp_grid_id#1733L]
+      +- *(1) Filter (((isnull(grid_id#543L) AND isnotnull(X#17)) AND isnotnull(Y#18)) AND isnotnull(exp_grid_id#529L))
+         +- InMemoryTableScan [X#17, Y#18, _id#16, exp_grid_id#529L, grid_id#543L], [isnull(grid_id#543L), isnotnull(X#17), isnotnull(Y#18), isnotnull(exp_grid_id#529L)]
+               +- InMemoryRelation [_id#16, X#17, Y#18, exp_grid_id#529L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, count#257L, grid_id#543L], StorageLevel(disk, memory, deserialized, 1 replicas)
+                     +- Exchange hashpartitioning(exp_grid_id#529L, 2), REPARTITION_WITH_NUM, [id=#243]
+                        +- InMemoryTableScan [_id#16, X#17, Y#18, exp_grid_id#529L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, count#257L, grid_id#543L]
+                              +- InMemoryRelation [_id#16, X#17, Y#18, exp_grid_id#529L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, count#257L, grid_id#543L], StorageLevel(disk, memory, deserialized, 1 replicas)
+                                    +- *(3) Project [_id#16, X#17, Y#18, grid_id#146L AS exp_grid_id#529L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, count#257L, CASE WHEN ((((X#17 >= grid_minX#149) AND (X#17 <= grid_maxX#147)) AND (Y#18 >= grid_minY#150)) AND (Y#18 <= grid_maxY#148)) THEN grid_id#146L ELSE null END AS grid_id#543L]
+                                       +- BroadcastNestedLoopJoin BuildRight, Inner, ((((X#17 >= exp_grid_minX#144) AND (X#17 <= exp_grid_maxX#142)) AND (Y#18 >= exp_grid_minY#145)) AND (Y#18 <= exp_grid_maxY#143))
+                                          :- *(1) Filter (isnotnull(X#17) AND isnotnull(Y#18))
+                                          :  +- FileScan csv [_id#16,X#17,Y#18] Batched: false, DataFilters: [isnotnull(X#17), isnotnull(Y#18)], Format: CSV, Location: InMemoryFileIndex[file:/home/user/DistributedDistanceJoin/testData/ais_one_hour.csv], PartitionFilters: [], PushedFilters: [IsNotNull(X), IsNotNull(Y)], ReadSchema: struct<_id:string,X:double,Y:double>
+                                          +- BroadcastExchange IdentityBroadcastMode, [id=#229]
+                                             +- *(2) Filter (((isnotnull(exp_grid_minX#144) AND isnotnull(exp_grid_maxX#142)) AND isnotnull(exp_grid_minY#145)) AND isnotnull(exp_grid_maxY#143))
+                                                +- *(2) ColumnarToRow
+                                                   +- InMemoryTableScan [grid_id#146L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, count#257L], [isnotnull(exp_grid_minX#144), isnotnull(exp_grid_maxX#142), isnotnull(exp_grid_minY#145), isnotnull(exp_grid_maxY#143)]
+                                                         +- InMemoryRelation [grid_id#146L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, count#257L], StorageLevel(disk, memory, deserialized, 1 replicas)
+                                                               +- *(2) Filter (count#257L > 0)
+                                                                  +- *(2) HashAggregate(keys=[grid_id#146L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145], functions=[count(1)])
+                                                                     +- Exchange hashpartitioning(grid_id#146L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, 200), ENSURE_REQUIREMENTS, [id=#186]
+                                                                        +- *(1) HashAggregate(keys=[grid_id#146L, knownfloatingpointnormalized(normalizenanandzero(grid_maxX#147)) AS grid_maxX#147, knownfloatingpointnormalized(normalizenanandzero(grid_maxY#148)) AS grid_maxY#148, knownfloatingpointnormalized(normalizenanandzero(grid_minX#149)) AS grid_minX#149, knownfloatingpointnormalized(normalizenanandzero(grid_minY#150)) AS grid_minY#150, knownfloatingpointnormalized(normalizenanandzero(exp_grid_maxX#142)) AS exp_grid_maxX#142, knownfloatingpointnormalized(normalizenanandzero(exp_grid_maxY#143)) AS exp_grid_maxY#143, knownfloatingpointnormalized(normalizenanandzero(exp_grid_minX#144)) AS exp_grid_minX#144, knownfloatingpointnormalized(normalizenanandzero(exp_grid_minY#145)) AS exp_grid_minY#145], functions=[partial_count(1)])
+                                                                           +- InMemoryTableScan [exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, grid_id#146L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150]
+                                                                                 +- InMemoryRelation [_id#38, X#39, Y#40, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, grid_id#146L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150], StorageLevel(disk, memory, deserialized, 1 replicas)
+                                                                                       +- BroadcastNestedLoopJoin BuildRight, Inner, ((((X#39 >= grid_minX#149) AND (X#39 <= grid_maxX#147)) AND (Y#40 >= grid_minY#150)) AND (Y#40 <= grid_maxY#148))
+                                                                                          :- *(1) Filter (isnotnull(X#39) AND isnotnull(Y#40))
+                                                                                          :  +- FileScan csv [_id#38,X#39,Y#40] Batched: false, DataFilters: [isnotnull(X#39), isnotnull(Y#40)], Format: CSV, Location: InMemoryFileIndex[file:/home/user/DistributedDistanceJoin/testData/ais_one_hour2.csv], PartitionFilters: [], PushedFilters: [IsNotNull(X), IsNotNull(Y)], ReadSchema: struct<_id:string,X:double,Y:double>
+                                                                                          +- BroadcastExchange IdentityBroadcastMode, [id=#164]
+                                                                                             +- *(2) Filter (((isnotnull(grid_minX#149) AND isnotnull(grid_maxX#147)) AND isnotnull(grid_minY#150)) AND isnotnull(grid_maxY#148))
+                                                                                                +- *(2) Scan ExistingRDD[exp_grid_maxX#142,exp_grid_maxY#143,exp_grid_minX#144,exp_grid_minY#145,grid_id#146L,grid_maxX#147,grid_maxY#148,grid_minX#149,grid_minY#150]
+
+
+------------------------------ LOCAL EXPLAIN ONE HOUR DATA -------------------------------------
+== Physical Plan ==
+*(2) Project [a_id#1504, b_id#1712]
++- *(2) BroadcastHashJoin [a_grid_id#1507L], [b_grid_id#1713L], Inner, BuildRight, false
+   :- *(2) Filter isnotnull(a_grid_id#1507L)
+   :  +- InMemoryTableScan [a_id#1504, a_grid_id#1507L], [isnotnull(a_grid_id#1507L)]
+   :        +- InMemoryRelation [a_id#1504, a_X#1505, a_Y#1506, a_grid_id#1507L], StorageLevel(disk, memory, deserialized, 1 replicas)
+   :              +- *(1) Project [_id#38 AS a_id#1504, X#39 AS a_X#1505, Y#40 AS a_Y#1506, grid_id#146L AS a_grid_id#1507L]
+   :                 +- InMemoryTableScan [X#39, Y#40, _id#38, grid_id#146L]
+   :                       +- InMemoryRelation [_id#38, X#39, Y#40, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, grid_id#146L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150], StorageLevel(disk, memory, deserialized, 1 replicas)
+   :                             +- BroadcastNestedLoopJoin BuildRight, Inner, ((((X#39 >= grid_minX#149) AND (X#39 <= grid_maxX#147)) AND (Y#40 >= grid_minY#150)) AND (Y#40 <= grid_maxY#148))
+   :                                :- *(1) Filter (isnotnull(X#39) AND isnotnull(Y#40))
+   :                                :  +- FileScan csv [_id#38,X#39,Y#40] Batched: false, DataFilters: [isnotnull(X#39), isnotnull(Y#40)], Format: CSV, Location: InMemoryFileIndex[file:/Users/thanoskottaridis/Documents/metaptixiako_files/main lectures/b_eksam..., PartitionFilters: [], PushedFilters: [IsNotNull(X), IsNotNull(Y)], ReadSchema: struct<_id:string,X:double,Y:double>
+   :                                +- BroadcastExchange IdentityBroadcastMode, [id=#164]
+   :                                   +- *(2) Filter (((isnotnull(grid_minX#149) AND isnotnull(grid_maxX#147)) AND isnotnull(grid_minY#150)) AND isnotnull(grid_maxY#148))
+   :                                      +- *(2) Scan ExistingRDD[exp_grid_maxX#142,exp_grid_maxY#143,exp_grid_minX#144,exp_grid_minY#145,grid_id#146L,grid_maxX#147,grid_maxY#148,grid_minX#149,grid_minY#150]
+   +- BroadcastExchange HashedRelationBroadcastMode(List(input[1, bigint, true]),false), [id=#282]
+      +- *(1) Project [_id#16 AS b_id#1712, grid_id#543L AS b_grid_id#1713L]
+         +- *(1) Filter ((isnotnull(grid_id#543L) AND isnotnull(exp_grid_id#529L)) AND (grid_id#543L = exp_grid_id#529L))
+            +- InMemoryTableScan [_id#16, exp_grid_id#529L, grid_id#543L], [isnotnull(grid_id#543L), isnotnull(exp_grid_id#529L), (grid_id#543L = exp_grid_id#529L)]
+                  +- InMemoryRelation [_id#16, X#17, Y#18, exp_grid_id#529L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, count#257L, grid_id#543L], StorageLevel(disk, memory, deserialized, 1 replicas)
+                        +- Exchange hashpartitioning(exp_grid_id#529L, 1), REPARTITION_WITH_NUM, [id=#243]
+                           +- InMemoryTableScan [_id#16, X#17, Y#18, exp_grid_id#529L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, count#257L, grid_id#543L]
+                                 +- InMemoryRelation [_id#16, X#17, Y#18, exp_grid_id#529L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, count#257L, grid_id#543L], StorageLevel(disk, memory, deserialized, 1 replicas)
+                                       +- *(3) Project [_id#16, X#17, Y#18, grid_id#146L AS exp_grid_id#529L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, count#257L, CASE WHEN ((((X#17 >= grid_minX#149) AND (X#17 <= grid_maxX#147)) AND (Y#18 >= grid_minY#150)) AND (Y#18 <= grid_maxY#148)) THEN grid_id#146L ELSE null END AS grid_id#543L]
+                                          +- BroadcastNestedLoopJoin BuildRight, Inner, ((((X#17 >= exp_grid_minX#144) AND (X#17 <= exp_grid_maxX#142)) AND (Y#18 >= exp_grid_minY#145)) AND (Y#18 <= exp_grid_maxY#143))
+                                             :- *(1) Filter (isnotnull(X#17) AND isnotnull(Y#18))
+                                             :  +- FileScan csv [_id#16,X#17,Y#18] Batched: false, DataFilters: [isnotnull(X#17), isnotnull(Y#18)], Format: CSV, Location: InMemoryFileIndex[file:/Users/thanoskottaridis/Documents/metaptixiako_files/main lectures/b_eksam..., PartitionFilters: [], PushedFilters: [IsNotNull(X), IsNotNull(Y)], ReadSchema: struct<_id:string,X:double,Y:double>
+                                             +- BroadcastExchange IdentityBroadcastMode, [id=#229]
+                                                +- *(2) Filter (((isnotnull(exp_grid_minX#144) AND isnotnull(exp_grid_maxX#142)) AND isnotnull(exp_grid_minY#145)) AND isnotnull(exp_grid_maxY#143))
+                                                   +- *(2) ColumnarToRow
+                                                      +- InMemoryTableScan [grid_id#146L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, count#257L], [isnotnull(exp_grid_minX#144), isnotnull(exp_grid_maxX#142), isnotnull(exp_grid_minY#145), isnotnull(exp_grid_maxY#143)]
+                                                            +- InMemoryRelation [grid_id#146L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, count#257L], StorageLevel(disk, memory, deserialized, 1 replicas)
+                                                                  +- *(2) Filter (count#257L > 0)
+                                                                     +- *(2) HashAggregate(keys=[grid_id#146L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145], functions=[count(1)])
+                                                                        +- Exchange hashpartitioning(grid_id#146L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, 200), ENSURE_REQUIREMENTS, [id=#186]
+                                                                           +- *(1) HashAggregate(keys=[grid_id#146L, knownfloatingpointnormalized(normalizenanandzero(grid_maxX#147)) AS grid_maxX#147, knownfloatingpointnormalized(normalizenanandzero(grid_maxY#148)) AS grid_maxY#148, knownfloatingpointnormalized(normalizenanandzero(grid_minX#149)) AS grid_minX#149, knownfloatingpointnormalized(normalizenanandzero(grid_minY#150)) AS grid_minY#150, knownfloatingpointnormalized(normalizenanandzero(exp_grid_maxX#142)) AS exp_grid_maxX#142, knownfloatingpointnormalized(normalizenanandzero(exp_grid_maxY#143)) AS exp_grid_maxY#143, knownfloatingpointnormalized(normalizenanandzero(exp_grid_minX#144)) AS exp_grid_minX#144, knownfloatingpointnormalized(normalizenanandzero(exp_grid_minY#145)) AS exp_grid_minY#145], functions=[partial_count(1)])
+                                                                              +- InMemoryTableScan [exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, grid_id#146L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150]
+                                                                                    +- InMemoryRelation [_id#38, X#39, Y#40, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, grid_id#146L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150], StorageLevel(disk, memory, deserialized, 1 replicas)
+                                                                                          +- BroadcastNestedLoopJoin BuildRight, Inner, ((((X#39 >= grid_minX#149) AND (X#39 <= grid_maxX#147)) AND (Y#40 >= grid_minY#150)) AND (Y#40 <= grid_maxY#148))
+                                                                                             :- *(1) Filter (isnotnull(X#39) AND isnotnull(Y#40))
+                                                                                             :  +- FileScan csv [_id#38,X#39,Y#40] Batched: false, DataFilters: [isnotnull(X#39), isnotnull(Y#40)], Format: CSV, Location: InMemoryFileIndex[file:/Users/thanoskottaridis/Documents/metaptixiako_files/main lectures/b_eksam..., PartitionFilters: [], PushedFilters: [IsNotNull(X), IsNotNull(Y)], ReadSchema: struct<_id:string,X:double,Y:double>
+                                                                                             +- BroadcastExchange IdentityBroadcastMode, [id=#164]
+                                                                                                +- *(2) Filter (((isnotnull(grid_minX#149) AND isnotnull(grid_maxX#147)) AND isnotnull(grid_minY#150)) AND isnotnull(grid_maxY#148))
+                                                                                                   +- *(2) Scan ExistingRDD[exp_grid_maxX#142,exp_grid_maxY#143,exp_grid_minX#144,exp_grid_minY#145,grid_id#146L,grid_maxX#147,grid_maxY#148,grid_minX#149,grid_minY#150]
+
+
+== Physical Plan ==
+*(2) BroadcastHashJoin [a_grid_id#1507L], [b_exp_grid_id#1733L], Inner, BuildRight, (SQRT((POWER((a_X#1505 - b_X#1731), 2.0) + POWER((a_Y#1506 - b_Y#1732), 2.0))) <= 0.09009009009009009), false
+:- *(2) Filter ((isnotnull(a_X#1505) AND isnotnull(a_Y#1506)) AND isnotnull(a_grid_id#1507L))
+:  +- InMemoryTableScan [a_id#1504, a_X#1505, a_Y#1506, a_grid_id#1507L], [isnotnull(a_X#1505), isnotnull(a_Y#1506), isnotnull(a_grid_id#1507L)]
+:        +- InMemoryRelation [a_id#1504, a_X#1505, a_Y#1506, a_grid_id#1507L], StorageLevel(disk, memory, deserialized, 1 replicas)
+:              +- *(1) Project [_id#38 AS a_id#1504, X#39 AS a_X#1505, Y#40 AS a_Y#1506, grid_id#146L AS a_grid_id#1507L]
+:                 +- InMemoryTableScan [X#39, Y#40, _id#38, grid_id#146L]
+:                       +- InMemoryRelation [_id#38, X#39, Y#40, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, grid_id#146L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150], StorageLevel(disk, memory, deserialized, 1 replicas)
+:                             +- BroadcastNestedLoopJoin BuildRight, Inner, ((((X#39 >= grid_minX#149) AND (X#39 <= grid_maxX#147)) AND (Y#40 >= grid_minY#150)) AND (Y#40 <= grid_maxY#148))
+:                                :- *(1) Filter (isnotnull(X#39) AND isnotnull(Y#40))
+:                                :  +- FileScan csv [_id#38,X#39,Y#40] Batched: false, DataFilters: [isnotnull(X#39), isnotnull(Y#40)], Format: CSV, Location: InMemoryFileIndex[file:/Users/thanoskottaridis/Documents/metaptixiako_files/main lectures/b_eksam..., PartitionFilters: [], PushedFilters: [IsNotNull(X), IsNotNull(Y)], ReadSchema: struct<_id:string,X:double,Y:double>
+:                                +- BroadcastExchange IdentityBroadcastMode, [id=#164]
+:                                   +- *(2) Filter (((isnotnull(grid_minX#149) AND isnotnull(grid_maxX#147)) AND isnotnull(grid_minY#150)) AND isnotnull(grid_maxY#148))
+:                                      +- *(2) Scan ExistingRDD[exp_grid_maxX#142,exp_grid_maxY#143,exp_grid_minX#144,exp_grid_minY#145,grid_id#146L,grid_maxX#147,grid_maxY#148,grid_minX#149,grid_minY#150]
++- BroadcastExchange HashedRelationBroadcastMode(List(input[3, bigint, true]),false), [id=#312]
+   +- *(1) Project [_id#16 AS b_id#1730, X#17 AS b_X#1731, Y#18 AS b_Y#1732, exp_grid_id#529L AS b_exp_grid_id#1733L]
+      +- *(1) Filter (((isnull(grid_id#543L) AND isnotnull(X#17)) AND isnotnull(Y#18)) AND isnotnull(exp_grid_id#529L))
+         +- InMemoryTableScan [X#17, Y#18, _id#16, exp_grid_id#529L, grid_id#543L], [isnull(grid_id#543L), isnotnull(X#17), isnotnull(Y#18), isnotnull(exp_grid_id#529L)]
+               +- InMemoryRelation [_id#16, X#17, Y#18, exp_grid_id#529L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, count#257L, grid_id#543L], StorageLevel(disk, memory, deserialized, 1 replicas)
+                     +- Exchange hashpartitioning(exp_grid_id#529L, 1), REPARTITION_WITH_NUM, [id=#243]
+                        +- InMemoryTableScan [_id#16, X#17, Y#18, exp_grid_id#529L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, count#257L, grid_id#543L]
+                              +- InMemoryRelation [_id#16, X#17, Y#18, exp_grid_id#529L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, count#257L, grid_id#543L], StorageLevel(disk, memory, deserialized, 1 replicas)
+                                    +- *(3) Project [_id#16, X#17, Y#18, grid_id#146L AS exp_grid_id#529L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, count#257L, CASE WHEN ((((X#17 >= grid_minX#149) AND (X#17 <= grid_maxX#147)) AND (Y#18 >= grid_minY#150)) AND (Y#18 <= grid_maxY#148)) THEN grid_id#146L ELSE null END AS grid_id#543L]
+                                       +- BroadcastNestedLoopJoin BuildRight, Inner, ((((X#17 >= exp_grid_minX#144) AND (X#17 <= exp_grid_maxX#142)) AND (Y#18 >= exp_grid_minY#145)) AND (Y#18 <= exp_grid_maxY#143))
+                                          :- *(1) Filter (isnotnull(X#17) AND isnotnull(Y#18))
+                                          :  +- FileScan csv [_id#16,X#17,Y#18] Batched: false, DataFilters: [isnotnull(X#17), isnotnull(Y#18)], Format: CSV, Location: InMemoryFileIndex[file:/Users/thanoskottaridis/Documents/metaptixiako_files/main lectures/b_eksam..., PartitionFilters: [], PushedFilters: [IsNotNull(X), IsNotNull(Y)], ReadSchema: struct<_id:string,X:double,Y:double>
+                                          +- BroadcastExchange IdentityBroadcastMode, [id=#229]
+                                             +- *(2) Filter (((isnotnull(exp_grid_minX#144) AND isnotnull(exp_grid_maxX#142)) AND isnotnull(exp_grid_minY#145)) AND isnotnull(exp_grid_maxY#143))
+                                                +- *(2) ColumnarToRow
+                                                   +- InMemoryTableScan [grid_id#146L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, count#257L], [isnotnull(exp_grid_minX#144), isnotnull(exp_grid_maxX#142), isnotnull(exp_grid_minY#145), isnotnull(exp_grid_maxY#143)]
+                                                         +- InMemoryRelation [grid_id#146L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, count#257L], StorageLevel(disk, memory, deserialized, 1 replicas)
+                                                               +- *(2) Filter (count#257L > 0)
+                                                                  +- *(2) HashAggregate(keys=[grid_id#146L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145], functions=[count(1)])
+                                                                     +- Exchange hashpartitioning(grid_id#146L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, 200), ENSURE_REQUIREMENTS, [id=#186]
+                                                                        +- *(1) HashAggregate(keys=[grid_id#146L, knownfloatingpointnormalized(normalizenanandzero(grid_maxX#147)) AS grid_maxX#147, knownfloatingpointnormalized(normalizenanandzero(grid_maxY#148)) AS grid_maxY#148, knownfloatingpointnormalized(normalizenanandzero(grid_minX#149)) AS grid_minX#149, knownfloatingpointnormalized(normalizenanandzero(grid_minY#150)) AS grid_minY#150, knownfloatingpointnormalized(normalizenanandzero(exp_grid_maxX#142)) AS exp_grid_maxX#142, knownfloatingpointnormalized(normalizenanandzero(exp_grid_maxY#143)) AS exp_grid_maxY#143, knownfloatingpointnormalized(normalizenanandzero(exp_grid_minX#144)) AS exp_grid_minX#144, knownfloatingpointnormalized(normalizenanandzero(exp_grid_minY#145)) AS exp_grid_minY#145], functions=[partial_count(1)])
+                                                                           +- InMemoryTableScan [exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, grid_id#146L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150]
+                                                                                 +- InMemoryRelation [_id#38, X#39, Y#40, exp_grid_maxX#142, exp_grid_maxY#143, exp_grid_minX#144, exp_grid_minY#145, grid_id#146L, grid_maxX#147, grid_maxY#148, grid_minX#149, grid_minY#150], StorageLevel(disk, memory, deserialized, 1 replicas)
+                                                                                       +- BroadcastNestedLoopJoin BuildRight, Inner, ((((X#39 >= grid_minX#149) AND (X#39 <= grid_maxX#147)) AND (Y#40 >= grid_minY#150)) AND (Y#40 <= grid_maxY#148))
+                                                                                          :- *(1) Filter (isnotnull(X#39) AND isnotnull(Y#40))
+                                                                                          :  +- FileScan csv [_id#38,X#39,Y#40] Batched: false, DataFilters: [isnotnull(X#39), isnotnull(Y#40)], Format: CSV, Location: InMemoryFileIndex[file:/Users/thanoskottaridis/Documents/metaptixiako_files/main lectures/b_eksam..., PartitionFilters: [], PushedFilters: [IsNotNull(X), IsNotNull(Y)], ReadSchema: struct<_id:string,X:double,Y:double>
+                                                                                          +- BroadcastExchange IdentityBroadcastMode, [id=#164]
+                                                                                             +- *(2) Filter (((isnotnull(grid_minX#149) AND isnotnull(grid_maxX#147)) AND isnotnull(grid_minY#150)) AND isnotnull(grid_maxY#148))
+                                                                                                +- *(2) Scan ExistingRDD[exp_grid_maxX#142,exp_grid_maxY#143,exp_grid_minX#144,exp_grid_minY#145,grid_id#146L,grid_maxX#147,grid_maxY#148,grid_minX#149,grid_minY#150]
+

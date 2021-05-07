@@ -114,14 +114,17 @@ def csvToTxt():
 def getOneMonthData(fromTime=1448988894) :
     results = fetchPointsInTimeInterval(timeFrom=fromTime, timeTo=fromTime + 2682000)
     points_df = pd.DataFrame(results)
+    points_df.set_index("_id", inplace=True)
     points_df.to_csv('ais_one_month.csv')
 
 
 def getOneHourData(fromTime=1448988894) :
     results = fetchPointsInTimeInterval(timeFrom=fromTime, timeTo=fromTime + 24*one_hour_in_Unix)
     points_df = pd.DataFrame(results)
-    points_df.to_csv('ais_one_hour2.csv')
+    points_df.set_index("_id", inplace=True)
+    points_df.to_csv('ais_one_hour.csv')
 
 
 if __name__ == '__main__':
-    getOneHourData(1448988894 + (24*one_hour_in_Unix))
+    # getOneHourData(1448988894 + (24*one_hour_in_Unix))
+    getOneMonthData(1448988894)

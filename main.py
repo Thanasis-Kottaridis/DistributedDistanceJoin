@@ -1,5 +1,6 @@
 # Main  Imports
 import time
+import sys
 
 # Local App Imports
 from utils import spatialUtils as utils
@@ -11,12 +12,6 @@ from pyspark.sql.types import DoubleType
 
 # Python math imports
 from math import radians, cos, sin, asin, sqrt
-
-
-# Constants
-# test paths
-test_sample_A_path = "testData/ais_one_hour.csv"
-test_sample_B_path = "testData/ais_one_hour2.csv"
 
 
 def calculate_minimum_grid_from_sdf(sdf1, sdf2, theta=10):
@@ -92,8 +87,16 @@ if __name__ == '__main__' :
 
     """
 
+    print('Number of arguments:', len(sys.argv), 'arguments.')
+    print('Argument List:', str(sys.argv))
+
+    # Constants
+    # test paths
+    test_sample_A_path = sys.argv[0] if len(sys.argv) == 3 is not None else "testData/ais_one_hour.csv"
+    test_sample_B_path = sys.argv[1] if len(sys.argv) == 3 is not None else "testData/ais_one_hour2.csv"
+
     # test theta
-    theta = 10
+    theta = sys.argv[2] if len(sys.argv) == 3 is not None else 10
 
     # full program timer
     total_time = time.time()
@@ -102,6 +105,7 @@ if __name__ == '__main__' :
     spark = SparkSession.builder\
             .appName("DistributedDistanceJoin_Test")\
             .master("local").getOrCreate()
+
 
     # Load CSV Files
     df_a = spark.read.csv(header="True", inferSchema="True", path=test_sample_A_path)
@@ -114,8 +118,8 @@ if __name__ == '__main__' :
     # df_b = df_b.filter((-6 <= df_b.X) & (df_b.X <= -5) & (47.5 <= df_b.Y) & (df_b.Y <= 49)) \
     #     .cache()
 
-    # df_a = df_a.limit(30000).cache()
-    # df_b = df_b.limit(30000).cache()
+    df_a = df_a.limit(25000).cache()
+    df_b = df_b.limit(75000).cache()
 
 
     print("Total filtered_df_a count {}".format(df_a.count()))
@@ -243,11 +247,10 @@ if __name__ == '__main__' :
     """
         Using approximation that 1 degree on earth is 111km
     """
-    # kmPerDegree = 1 / 111
-    # targetDist = kmPerDegree * theta
-    # final_result = ta.join(tb, ta.a_grid_id == tb.b_exp_grid_id)\
-    #     .where(F.sqrt(pow(F.col("a_X") - F.col("b_X"), 2) + pow(F.col("a_Y") - F.col("b_Y"), 2)) <= targetDist )
-
+    kmPerDegree = 1 / 111
+    targetDist = kmPerDegree * theta
+    final_result = ta.join(tb, ta.a_grid_id == tb.b_exp_grid_id)\
+        .where(F.sqrt(pow(F.col("a_X") - F.col("b_X"), 2) + pow(F.col("a_Y") - F.col("b_Y"), 2)) <= targetDist)
 
     """
         UDF Haversine distance
@@ -260,13 +263,13 @@ if __name__ == '__main__' :
     """
         Haversine using spark F functions
     """
-    final_result = ta.join(tb, ta.a_grid_id == tb.b_exp_grid_id)\
-        .withColumn("a", (
-            F.pow(F.sin((F.radians(F.col("b_Y") - F.col("a_Y"))) / 2), 2) +
-            F.cos(F.radians(F.col("a_Y"))) * F.cos(F.radians(F.col("b_Y"))) *
-            F.pow(F.sin((F.radians(F.col("b_X") - F.col("a_X"))) / 2), 2)))\
-        .withColumn("haversine_dist", F.asin(F.sqrt(F.col("a"))) * 12742)\
-        .filter(F.col("haversine_dist") <= theta)
+    # final_result = ta.join(tb, ta.a_grid_id == tb.b_exp_grid_id)\
+    #     .withColumn("a", (
+    #         F.pow(F.sin((F.radians(F.col("b_Y") - F.col("a_Y"))) / 2), 2) +
+    #         F.cos(F.radians(F.col("a_Y"))) * F.cos(F.radians(F.col("b_Y"))) *
+    #         F.pow(F.sin((F.radians(F.col("b_X") - F.col("a_X"))) / 2), 2)))\
+    #     .withColumn("haversine_dist", F.asin(F.sqrt(F.col("a"))) * 12742)\
+    #     .filter(F.col("haversine_dist") <= theta)
 
     # TODO WRITE DATA TO FILE
     # final_result.write.save("dist_join_result.csv", format="csv", mode="append")
@@ -278,6 +281,10 @@ if __name__ == '__main__' :
     print(first_result.count())  # TODO REMOVE THIS LINE
     print("--- %s seconds ---" % (time.time() - start_time))
 
+    # timing procedure
+    start_time = time.time()
+
     print(final_result.count())  # TODO REMOVE THIS LINE
+    print("--- %s seconds ---" % (time.time() - start_time))
 
     print("--- TOTAL EXECUTION TIME ---\n--- %s seconds ---" % (time.time() - total_time))
