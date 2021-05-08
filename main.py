@@ -92,19 +92,27 @@ if __name__ == '__main__' :
 
     # Constants
     # test paths
-    test_sample_A_path = sys.argv[0] if len(sys.argv) == 3 is not None else "testData/ais_one_hour.csv"
-    test_sample_B_path = sys.argv[1] if len(sys.argv) == 3 is not None else "testData/ais_one_hour2.csv"
+    test_sample_A_path = sys.argv[1] if len(sys.argv) == 4 is not None else "testData/ais_one_hour.csv"
+    test_sample_B_path = sys.argv[2] if len(sys.argv) == 4 is not None else "testData/ais_one_hour2.csv"
 
     # test theta
-    theta = sys.argv[2] if len(sys.argv) == 3 is not None else 10
+    theta = float(sys.argv[3]) if len(sys.argv) == 4 is not None else 10
 
     # full program timer
     total_time = time.time()
 
     # create spark session object
+
     spark = SparkSession.builder\
             .appName("DistributedDistanceJoin_Test")\
             .master("local").getOrCreate()
+
+    # spark = SparkSession.builder \
+    #     .appName("DistributedDistanceJoin_Test") \
+    #     .master("spark://192.168.0.2:7077") \
+    #     .config("spark.driver.memory", "6g") \
+    #     .config("spark.executor.memory", "6g") \
+    #     .getOrCreate()
 
 
     # Load CSV Files
@@ -118,8 +126,8 @@ if __name__ == '__main__' :
     # df_b = df_b.filter((-6 <= df_b.X) & (df_b.X <= -5) & (47.5 <= df_b.Y) & (df_b.Y <= 49)) \
     #     .cache()
 
-    df_a = df_a.limit(25000).cache()
-    df_b = df_b.limit(75000).cache()
+    # df_a = df_a.limit(25000).cache()
+    # df_b = df_b.limit(75000).cache()
 
 
     print("Total filtered_df_a count {}".format(df_a.count()))
@@ -191,9 +199,9 @@ if __name__ == '__main__' :
     print("--- %s seconds ---" % (time.time() - start_time))
 
     # Repartition spatial_join_result based on grid_id and spatial_join_b_result based on exp_grid_id
-    partitions_count = spatial_join_b_result.rdd.getNumPartitions()
-    spatial_join_b_result = spatial_join_b_result.repartition(partitions_count, "exp_grid_id")\
-        .persist()
+    # partitions_count = spatial_join_b_result.rdd.getNumPartitions()
+    # spatial_join_b_result = spatial_join_b_result.repartition(partitions_count, "exp_grid_id")\
+    #     .persist()
 
     # Perform a simple join on grid_id column on spatial_join_result and spatial_join_b_result
     # in order to find all points in the same grid (those points consider matching by default)
@@ -207,20 +215,7 @@ if __name__ == '__main__' :
                 F.col("grid_id").alias("a_grid_id"))\
         .cache()
 
-    filtered_b_results = spatial_join_b_result \
-        .filter(F.col("grid_id") == F.col("exp_grid_id")) \
-        .select(F.col("_id").alias("b_id"), F.col("grid_id").alias("b_grid_id"))
-
     ta = filtered_a_results.alias('ta')
-    tb = filtered_b_results.alias('tb')
-
-    first_result = ta.join(tb, ta.a_grid_id == tb.b_grid_id) \
-        .select(F.col("a_id"), F.col("b_id"))
-
-    # write file
-    # print(first_result.count())  # TODO REMOVE THIS LINE
-    # TODO WRITE THIS POINTS TO HDFS
-    # .write.save("dist_join_result.csv", format="csv", mode="overwrite")
 
     print("--- %s seconds ---" % (time.time() - start_time))
 
@@ -247,10 +242,10 @@ if __name__ == '__main__' :
     """
         Using approximation that 1 degree on earth is 111km
     """
-    kmPerDegree = 1 / 111
-    targetDist = kmPerDegree * theta
-    final_result = ta.join(tb, ta.a_grid_id == tb.b_exp_grid_id)\
-        .where(F.sqrt(pow(F.col("a_X") - F.col("b_X"), 2) + pow(F.col("a_Y") - F.col("b_Y"), 2)) <= targetDist)
+    # kmPerDegree = 1 / 111
+    # targetDist = kmPerDegree * theta
+    # final_result = ta.join(tb, ta.a_grid_id == tb.b_exp_grid_id)\
+    #     .where(F.sqrt(pow(F.col("a_X") - F.col("b_X"), 2) + pow(F.col("a_Y") - F.col("b_Y"), 2)) <= targetDist)
 
     """
         UDF Haversine distance
@@ -263,16 +258,33 @@ if __name__ == '__main__' :
     """
         Haversine using spark F functions
     """
-    # final_result = ta.join(tb, ta.a_grid_id == tb.b_exp_grid_id)\
-    #     .withColumn("a", (
-    #         F.pow(F.sin((F.radians(F.col("b_Y") - F.col("a_Y"))) / 2), 2) +
-    #         F.cos(F.radians(F.col("a_Y"))) * F.cos(F.radians(F.col("b_Y"))) *
-    #         F.pow(F.sin((F.radians(F.col("b_X") - F.col("a_X"))) / 2), 2)))\
-    #     .withColumn("haversine_dist", F.asin(F.sqrt(F.col("a"))) * 12742)\
-    #     .filter(F.col("haversine_dist") <= theta)
+    final_result = ta.join(tb, ta.a_grid_id == tb.b_exp_grid_id)\
+        .withColumn("a", (
+            F.pow(F.sin((F.radians(F.col("b_Y") - F.col("a_Y"))) / 2), 2) +
+            F.cos(F.radians(F.col("a_Y"))) * F.cos(F.radians(F.col("b_Y"))) *
+            F.pow(F.sin((F.radians(F.col("b_X") - F.col("a_X"))) / 2), 2)))\
+        .withColumn("haversine_dist", F.asin(F.sqrt(F.col("a"))) * 12742)\
+        .filter(F.col("haversine_dist") <= theta)
 
     # TODO WRITE DATA TO FILE
     # final_result.write.save("dist_join_result.csv", format="csv", mode="append")
+
+    """
+        Perform grid join
+    """
+    filtered_b_results = spatial_join_b_result \
+        .filter(F.col("grid_id") == F.col("exp_grid_id")) \
+        .select(F.col("_id").alias("b_id"), F.col("grid_id").alias("b_grid_id"))
+
+    tb = filtered_b_results.alias('tb')
+
+    first_result = ta.join(tb, ta.a_grid_id == tb.b_grid_id) \
+        .select(F.col("a_id"), F.col("b_id"))
+
+    # write file
+    # print(first_result.count())  # TODO REMOVE THIS LINE
+    # TODO WRITE THIS POINTS TO HDFS
+    # .write.save("dist_join_result.csv", format="csv", mode="overwrite")
 
     # show explain
     # first_result.explain()
