@@ -92,27 +92,30 @@ if __name__ == '__main__' :
 
     # Constants
     # test paths
-    test_sample_A_path = sys.argv[1] if len(sys.argv) == 4 is not None else "testData/ais_one_hour.csv"
-    test_sample_B_path = sys.argv[2] if len(sys.argv) == 4 is not None else "testData/ais_one_hour2.csv"
+    test_sample_A_path = sys.argv[1] if len(sys.argv) == 6 is not None else "testData/ais_one_hour.csv"
+    test_sample_B_path = sys.argv[2] if len(sys.argv) == 6 is not None else "testData/ais_one_hour2.csv"
 
     # test theta
-    theta = float(sys.argv[3]) if len(sys.argv) == 4 is not None else 10
+    theta = float(sys.argv[3]) if len(sys.argv) == 6 is not None else 10
+    distanceType = sys.argv[4] if len(sys.argv) == 6 is not None else "euclidean"
+    enviromentType = sys.argv[5] if len(sys.argv) == 6 is not None else "local"
 
     # full program timer
     total_time = time.time()
 
     # create spark session object
 
-    spark = SparkSession.builder\
-            .appName("DistributedDistanceJoin_Test")\
+    if enviromentType == "cluster":
+        spark = SparkSession.builder \
+            .appName("DistributedDistanceJoin_Test") \
+            .master("spark://192.168.0.2:7077") \
+            .config("spark.driver.memory", "6g") \
+            .config("spark.executor.memory", "6g") \
+            .getOrCreate()
+    else:
+        spark = SparkSession.builder \
+            .appName("DistributedDistanceJoin_Test") \
             .master("local").getOrCreate()
-
-    # spark = SparkSession.builder \
-    #     .appName("DistributedDistanceJoin_Test") \
-    #     .master("spark://192.168.0.2:7077") \
-    #     .config("spark.driver.memory", "6g") \
-    #     .config("spark.executor.memory", "6g") \
-    #     .getOrCreate()
 
 
     # Load CSV Files
@@ -242,10 +245,23 @@ if __name__ == '__main__' :
     """
         Using approximation that 1 degree on earth is 111km
     """
-    # kmPerDegree = 1 / 111
-    # targetDist = kmPerDegree * theta
-    # final_result = ta.join(tb, ta.a_grid_id == tb.b_exp_grid_id)\
-    #     .where(F.sqrt(pow(F.col("a_X") - F.col("b_X"), 2) + pow(F.col("a_Y") - F.col("b_Y"), 2)) <= targetDist)
+    if distanceType != "haversine":
+        kmPerDegree = 1 / 111
+        targetDist = kmPerDegree * theta
+        final_result = ta.join(tb, ta.a_grid_id == tb.b_exp_grid_id)\
+            .where(F.sqrt(pow(F.col("a_X") - F.col("b_X"), 2) + pow(F.col("a_Y") - F.col("b_Y"), 2)) <= targetDist)
+
+    else:
+        """
+            Haversine using spark F functions
+        """
+        final_result = ta.join(tb, ta.a_grid_id == tb.b_exp_grid_id)\
+            .withColumn("a", (
+                F.pow(F.sin((F.radians(F.col("b_Y") - F.col("a_Y"))) / 2), 2) +
+                F.cos(F.radians(F.col("a_Y"))) * F.cos(F.radians(F.col("b_Y"))) *
+                F.pow(F.sin((F.radians(F.col("b_X") - F.col("a_X"))) / 2), 2)))\
+            .withColumn("haversine_dist", F.asin(F.sqrt(F.col("a"))) * 12742)\
+            .filter(F.col("haversine_dist") <= theta)
 
     """
         UDF Haversine distance
@@ -255,16 +271,6 @@ if __name__ == '__main__' :
     #                                        udfsomefunc(F.col("a_X"), F.col("a_Y"), F.col("b_X"), F.col("b_Y"))) \
     #     .filter(F.col("haversine_dist") <= theta)
 
-    """
-        Haversine using spark F functions
-    """
-    final_result = ta.join(tb, ta.a_grid_id == tb.b_exp_grid_id)\
-        .withColumn("a", (
-            F.pow(F.sin((F.radians(F.col("b_Y") - F.col("a_Y"))) / 2), 2) +
-            F.cos(F.radians(F.col("a_Y"))) * F.cos(F.radians(F.col("b_Y"))) *
-            F.pow(F.sin((F.radians(F.col("b_X") - F.col("a_X"))) / 2), 2)))\
-        .withColumn("haversine_dist", F.asin(F.sqrt(F.col("a"))) * 12742)\
-        .filter(F.col("haversine_dist") <= theta)
 
     # TODO WRITE DATA TO FILE
     # final_result.write.save("dist_join_result.csv", format="csv", mode="append")

@@ -118,13 +118,16 @@ def getOneMonthData(fromTime=1448988894) :
     points_df.to_csv('ais_one_month.csv')
 
 
-def getOneHourData(fromTime=1448988894) :
+def getOneHourData(fromTime=1448988894, filter=None, filename='ais_one_hour.csv') :
     results = fetchPointsInTimeInterval(timeFrom=fromTime, timeTo=fromTime + 24*one_hour_in_Unix)
     points_df = pd.DataFrame(results)
     points_df.set_index("_id", inplace=True)
-    points_df.to_csv('ais_one_hour.csv')
+    if filter is not None:
+        points_df.head(filter).to_csv(filename)
+    else:
+        points_df.to_csv(filename)
 
 
 if __name__ == '__main__':
-    # getOneHourData(1448988894 + (24*one_hour_in_Unix))
-    getOneMonthData(1448988894)
+    getOneHourData(1448988894 , filter=50000, filename='../testData/ais_one_hour_50k.csv')
+    # getOneMonthData(1448988894)
