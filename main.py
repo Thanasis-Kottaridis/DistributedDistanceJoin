@@ -92,8 +92,8 @@ if __name__ == '__main__' :
 
     # Constants
     # test paths
-    test_sample_A_path = sys.argv[1] if len(sys.argv) == 6 is not None else "testData/ais_one_hour.csv"
-    test_sample_B_path = sys.argv[2] if len(sys.argv) == 6 is not None else "testData/ais_one_hour2.csv"
+    test_sample_A_path = sys.argv[1] if len(sys.argv) == 6 is not None else "testData/ais_one_hour_25k.csv"
+    test_sample_B_path = sys.argv[2] if len(sys.argv) == 6 is not None else "testData/ais_one_hour2_25k.csv"
 
     # test theta
     theta = float(sys.argv[3]) if len(sys.argv) == 6 is not None else 10
@@ -249,7 +249,8 @@ if __name__ == '__main__' :
         kmPerDegree = 1 / 111
         targetDist = kmPerDegree * theta
         final_result = ta.join(tb, ta.a_grid_id == tb.b_exp_grid_id)\
-            .where(F.sqrt(pow(F.col("a_X") - F.col("b_X"), 2) + pow(F.col("a_Y") - F.col("b_Y"), 2)) <= targetDist)
+            .where(F.sqrt(pow(F.col("a_X") - F.col("b_X"), 2) + pow(F.col("a_Y") - F.col("b_Y"), 2)) <= targetDist)\
+            .select(F.col("a_id"), F.col("b_id"))
 
     else:
         """
@@ -261,7 +262,8 @@ if __name__ == '__main__' :
                 F.cos(F.radians(F.col("a_Y"))) * F.cos(F.radians(F.col("b_Y"))) *
                 F.pow(F.sin((F.radians(F.col("b_X") - F.col("a_X"))) / 2), 2)))\
             .withColumn("haversine_dist", F.asin(F.sqrt(F.col("a"))) * 12742)\
-            .filter(F.col("haversine_dist") <= theta)
+            .filter(F.col("haversine_dist") <= theta)\
+            .select(F.col("a_id"), F.col("b_id"))
 
     """
         UDF Haversine distance
@@ -304,5 +306,10 @@ if __name__ == '__main__' :
 
     print(final_result.count())  # TODO REMOVE THIS LINE
     print("--- %s seconds ---" % (time.time() - start_time))
+
+
+    first_result.union(final_result)\
+        .write.csv('testData/dj_results')
+
 
     print("--- TOTAL EXECUTION TIME ---\n--- %s seconds ---" % (time.time() - total_time))
